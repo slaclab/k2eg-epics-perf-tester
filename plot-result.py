@@ -36,4 +36,4 @@ if __name__ == "__main__":
     # else:
     #     print("The folder path is needed as parameter")
     #     exit(1)
-    plotGraph("2023-12-08_20-36-15")
+    plotGraph("test_2023-12-08_21-21-21")

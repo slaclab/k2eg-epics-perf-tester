@@ -52,7 +52,7 @@ def test_epix(config, test_directory, test_prefix):
         for client_idx in range(current_client_count):
             for pv in pv_list:
                 pv_idx_name = f"{pv}_{client_idx}"
-                out_file_dict[pv_idx_name] = open(os.path.join(test_directory, f"{pv_idx_name}_epics.csv"), "w")
+                out_file_dict[pv_idx_name] = open(os.path.join(test_directory, f"{pv_idx_name}_{current_client_count}_epics.sample"), "w")
                 callback_with_index = partial(monitor_handler, pv_idx_name)
                 epics_pv[pv_idx_name] = PV(pv, callback=callback_with_index)
     
@@ -71,9 +71,9 @@ def test_epix(config, test_directory, test_prefix):
                         pv_idx_name = "{}_{}".format(pv, client_idx)
                         epics_pv[pv_idx_name].clear_callbacks()
                         out_file_dict[pv_idx_name].close()
-                        csv_file = os.path.join(test_directory, f"{pv}_{client_idx}_epics.csv")
+                        csv_file = os.path.join(test_directory, f"{pv}_{client_idx}_{current_client_count}_epics.sample")
                         values = read_data_from_file(csv_file)
-                        os.remove(csv_file)
+                        #os.remove(csv_file)
                         test_results[pv_idx_name] = calculate_average(values)
             writer.writerow(test_results.keys())
             writer.writerow(test_results.values())
