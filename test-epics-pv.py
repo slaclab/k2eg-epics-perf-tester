@@ -28,6 +28,7 @@ def monitor_handler(pv_index_name, pvname=None, data=None, timestamp=None, **kwa
     
 
 def test_epix(config, test_prefix):
+    interval = 1   # Update interval in seconds
     number_of_client = 1
     run_for_sec = 10
     if 'pv-to-test' not in config:
@@ -37,38 +38,42 @@ def test_epix(config, test_prefix):
     if 'test-duration' in config:
         run_for_sec = config['test-duration']
     pv_list = config['pv-to-test']
-    # create output file for all the pv
-    for client_idx in range(number_of_client):
-        for pv in pv_list:
-            pv_idx_name = "{}_{}".format(pv, client_idx)
-            out_file_dict[pv_idx_name] = open("{}_epics.csv".format(pv_idx_name), "w")
 
-            callback_with_index = partial(monitor_handler, pv_idx_name)
-            epics_pv[pv_idx_name] = PV(pv, callback=callback_with_index)
-    
-    interval = 1   # Update interval in seconds
-    print(run_for_sec, flush=True)
-    for i in range(1, run_for_sec + 1):
-        print(i, flush=True)
-        time.sleep(interval)
-    #stop all pv and close file
-    test_results = {}
-    current_datetime = datetime.datetime.now()
-    datetime_str = current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
-    with open(f'{datetime_str}_{test_prefix}_epics_results.csv', 'w', newline='') as file:
-        writer = csv.writer(file)
-        # Writing the header (test names)
-        for client_idx in range(number_of_client):
+    # send the total number of second of test each test last for 'run_for_sec' 
+    # second and will be reaped for a 'number_of_client' times
+    print(run_for_sec*number_of_client, flush=True)
+    total_time_last = 0
+    for current_client_count in range(1, number_of_client + 1):
+        print(f"Testing with {current_client_count} client(s).")
+        # Setup and subscribe to PVs for the current number of clients
+        for client_idx in range(current_client_count):
             for pv in pv_list:
-                    pv_idx_name = "{}_{}".format(pv, client_idx)
-                    epics_pv[pv_idx_name].clear_callbacks()
-                    out_file_dict[pv_idx_name].close()
-                    values = read_data_from_file("{}_{}_epics.csv".format(pv, client_idx))
-                    test_results[pv_idx_name] = calculate_average(values)
-        writer.writerow(test_results.keys())
-        writer.writerow(test_results.values())
-
-
+                pv_idx_name = f"{pv}_{client_idx}"
+                out_file_dict[pv_idx_name] = open(f"{pv_idx_name}_epics.csv", "w")
+                callback_with_index = partial(monitor_handler, pv_idx_name)
+                epics_pv[pv_idx_name] = PV(pv, callback=callback_with_index)
+    
+        # wait for completion of the single test
+        for i in range(1, run_for_sec + 1):
+            total_time_last = total_time_last +1
+            print(total_time_last, flush=True)
+            time.sleep(interval)
+        #stop all pv and close file
+        test_results = {}
+        current_datetime = datetime.datetime.now()
+        datetime_str = current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
+        with open(f'{datetime_str}_{test_prefix}_{current_client_count}_epics_results.csv', 'w', newline='') as file:
+            writer = csv.writer(file)
+            # Writing the header (test names)
+            for client_idx in range(current_client_count):
+                for pv in pv_list:
+                        pv_idx_name = "{}_{}".format(pv, client_idx)
+                        epics_pv[pv_idx_name].clear_callbacks()
+                        out_file_dict[pv_idx_name].close()
+                        values = read_data_from_file(f"{pv}_{client_idx}_epics.csv")
+                        test_results[pv_idx_name] = calculate_average(values)
+            writer.writerow(test_results.keys())
+            writer.writerow(test_results.values())
 
 def read_data_from_file(file_path):
     """Read nanosecond values from a file and return them as a list of integers."""
