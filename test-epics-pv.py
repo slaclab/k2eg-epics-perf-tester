@@ -6,6 +6,7 @@ import csv
 from functools import partial
 import datetime
 import sys
+import pandas as pd
 
 out_file_dict = {}
 epics_pv = {}
@@ -72,28 +73,26 @@ def test_epix(config, test_directory, test_prefix):
                         epics_pv[pv_idx_name].clear_callbacks()
                         out_file_dict[pv_idx_name].close()
                         csv_file = os.path.join(test_directory, f"{pv}_{client_idx}_{current_client_count}_epics.sample")
-                        values = read_data_from_file(csv_file)
+
                         #os.remove(csv_file)
-                        test_results[pv_idx_name] = calculate_average(values)
+                        test_results[pv_idx_name] = calculate_average_latency(csv_file)
             writer.writerow(test_results.keys())
             writer.writerow(test_results.values())
 
-def read_data_from_file(file_path):
-    """Read nanosecond values from a file and return them as a list of integers."""
-    with open(file_path, 'r') as file:
-        data = [float(line.strip()) for line in file if line.strip()]
-    
-        # Ensure that there are enough data points to remove two values
-    if len(data) > 2:
-        data.sort()
-        return data[1:-1]  # Exclude the first and last elements (lowest and highest)
+
+def calculate_average_latency(sample_file_path):
+    # Read the file into a Pandas DataFrame
+    df = pd.read_csv(sample_file_path, header=None, names=['Latency'])
+
+    # Remove the highest and lowest values
+    df_sorted = df['Latency'].sort_values()
+    if len(df_sorted) > 2:
+        df_filtered = df_sorted.iloc[1:-1]
     else:
-        return data  # Return the data as-is if there aren't enough elements to remove two
+        df_filtered = df_sorted
 
-
-def calculate_average(values):
-    """Calculate the average of a list of values."""
-    return sum(values) / len(values) if values else 0
+    # Calculate the average latency
+    return df_filtered.mean()
 
 if __name__ == "__main__":
     config = None
