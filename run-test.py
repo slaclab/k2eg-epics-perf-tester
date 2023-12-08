@@ -1,8 +1,12 @@
+import os
 import subprocess
 import concurrent.futures
 import threading
 import time
+import datetime
 import sys
+import pandas as pd
+import matplotlib.pyplot as plt
 # Global progress state and lock
 progress_dict = {}  # To track progress of each script
 max_steps_dict = {}  # To track total steps for each script
@@ -43,11 +47,16 @@ def run_test(test_script, params=[]):
             del max_steps_dict[test_script]
 
 def main():
+    #create folder with the start test time
+    start_test_time = 'test_{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    os.mkdir(start_test_time) 
+
     # Running scripts sequentially
     sequential_scripts = [
-        ("test-epics-pv.py", ["standalone"]),
-        ("test-k2eg-pv.py", ["standalone"])
+        ("test-epics-pv.py", [start_test_time, "standalone"]),
+        ("test-k2eg-pv.py", [start_test_time, "standalone"])
     ]
+
     print("Execute sequential tests")
     for script, params in sequential_scripts:
         print(f"\nExecute {script} tests")
@@ -59,14 +68,14 @@ def main():
 
     # Running scripts in parallel
     parallel_scripts = [
-        ("test-epics-pv.py", ["combined"]),
-        ("test-k2eg-pv.py", ["combined"])
+        ("test-epics-pv.py", [start_test_time, "combined"]),
+        ("test-k2eg-pv.py", [start_test_time, "combined"])
     ]
     print("\nExecute parallels tests")
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = [executor.submit(run_test, script, params) for script, params in parallel_scripts]
         for future in concurrent.futures.as_completed(futures):
             future.result()
-    print("\n test compelted!")
+    print("\ntest compelted!")
 if __name__ == "__main__":
     main()

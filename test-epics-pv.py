@@ -1,3 +1,4 @@
+import os
 import yaml
 from epics import PV
 import time
@@ -27,7 +28,7 @@ def monitor_handler(pv_index_name, pvname=None, data=None, timestamp=None, **kwa
     out_file_dict[pv_index_name].flush()
     
 
-def test_epix(config, test_prefix):
+def test_epix(config, test_directory, test_prefix):
     interval = 1   # Update interval in seconds
     number_of_client = 1
     run_for_sec = 10
@@ -39,17 +40,19 @@ def test_epix(config, test_prefix):
         run_for_sec = config['test-duration']
     pv_list = config['pv-to-test']
 
+
     # send the total number of second of test each test last for 'run_for_sec' 
     # second and will be reaped for a 'number_of_client' times
     print(run_for_sec*number_of_client, flush=True)
     total_time_last = 0
     for current_client_count in range(1, number_of_client + 1):
-        print(f"Testing with {current_client_count} client(s).")
+        result_file_name = f'{test_prefix}_{current_client_count}_epics_results.csv'
+        full_result_path = os.path.join(test_directory, result_file_name)
         # Setup and subscribe to PVs for the current number of clients
         for client_idx in range(current_client_count):
             for pv in pv_list:
                 pv_idx_name = f"{pv}_{client_idx}"
-                out_file_dict[pv_idx_name] = open(f"{pv_idx_name}_epics.csv", "w")
+                out_file_dict[pv_idx_name] = open(os.path.join(test_directory, f"{pv_idx_name}_epics.csv"), "w")
                 callback_with_index = partial(monitor_handler, pv_idx_name)
                 epics_pv[pv_idx_name] = PV(pv, callback=callback_with_index)
     
@@ -60,9 +63,7 @@ def test_epix(config, test_prefix):
             time.sleep(interval)
         #stop all pv and close file
         test_results = {}
-        current_datetime = datetime.datetime.now()
-        datetime_str = current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
-        with open(f'{datetime_str}_{test_prefix}_{current_client_count}_epics_results.csv', 'w', newline='') as file:
+        with open(full_result_path, 'w', newline='') as file:
             writer = csv.writer(file)
             # Writing the header (test names)
             for client_idx in range(current_client_count):
@@ -70,7 +71,9 @@ def test_epix(config, test_prefix):
                         pv_idx_name = "{}_{}".format(pv, client_idx)
                         epics_pv[pv_idx_name].clear_callbacks()
                         out_file_dict[pv_idx_name].close()
-                        values = read_data_from_file(f"{pv}_{client_idx}_epics.csv")
+                        csv_file = os.path.join(test_directory, f"{pv}_{client_idx}_epics.csv")
+                        values = read_data_from_file(csv_file)
+                        os.remove(csv_file)
                         test_results[pv_idx_name] = calculate_average(values)
             writer.writerow(test_results.keys())
             writer.writerow(test_results.values())
@@ -78,7 +81,15 @@ def test_epix(config, test_prefix):
 def read_data_from_file(file_path):
     """Read nanosecond values from a file and return them as a list of integers."""
     with open(file_path, 'r') as file:
-        return [float(line.strip()) for line in file if line.strip()]
+        data = [float(line.strip()) for line in file if line.strip()]
+    
+        # Ensure that there are enough data points to remove two values
+    if len(data) > 2:
+        data.sort()
+        return data[1:-1]  # Exclude the first and last elements (lowest and highest)
+    else:
+        return data  # Return the data as-is if there aren't enough elements to remove two
+
 
 def calculate_average(values):
     """Calculate the average of a list of values."""
@@ -86,16 +97,18 @@ def calculate_average(values):
 
 if __name__ == "__main__":
     config = None
-    test_prefix = ""
+    test_directory = 'no-specified-directory'
+    test_prefix = 'no-specified-prefix'
     if len(sys.argv) > 1:
         # sys.argv[1] will be the first parameter, sys.argv[2] the second, and so on.
         for i, param in enumerate(sys.argv[1:], start=1):
             if i == 1:
+                test_directory = param
+            elif i ==2:
                 test_prefix = param
-            print(f"Parameter {i}: {param}")
     else:
-        print("No additional parameters were passed.")
+        exit(1)
     with open("config.yaml", "r") as file:
         config = yaml.safe_load(file)
-    test_epix(config, test_prefix)
+    test_epix(config, test_directory, test_prefix)
     print("completed")
