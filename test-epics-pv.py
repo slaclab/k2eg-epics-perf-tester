@@ -8,10 +8,10 @@ import datetime
 import sys
 import pandas as pd
 
-out_file_dict = {}
-epics_pv = {}
+sample_file = None
 
-def monitor_handler(pv_index_name, pvname=None, data=None, timestamp=None, **kwargs):
+def monitor_handler(pvname=None, data=None, timestamp=None, **kwargs):
+    global sample_file
     current_time_nanoseconds = time.time_ns()
 
     # Convert the PV timestamp to nanoseconds
@@ -25,60 +25,34 @@ def monitor_handler(pv_index_name, pvname=None, data=None, timestamp=None, **kwa
         latency_nanoseconds += 1e9
 
     #print(f"PV:{pvname} latency  nanousec:{latency_nanoseconds}")
-    out_file_dict[pv_index_name].write(str(latency_nanoseconds) + "\n")
-    out_file_dict[pv_index_name].flush()
+    sample_file.write(str(latency_nanoseconds) + "\n")
+    sample_file.flush()
     
 
-def test_epix(config, test_directory, test_prefix):
+def test_epix(config, test_directory, test_prefix, client_total, client_idx):
+    global sample_file
     interval = 1   # Update interval in seconds
     number_of_client = 1
     run_for_sec = 10
     if 'pv-to-test' not in config:
-        print('No pv configured')
-    if 'number-of-client' in config:
-        number_of_client = config['number-of-client']
-    if 'test-duration' in config:
-        run_for_sec = config['test-duration']
-    pv_list = config['pv-to-test']
+        exit(1)
+    if 'test-duration' not in config:
+         exit(1)
+        
+    run_for_sec = config['test-duration']
+    pv = config['pv-to-test']
 
-
-    # send the total number of second of test each test last for 'run_for_sec' 
-    # second and will be reaped for a 'number_of_client' times
-    print(run_for_sec*number_of_client, flush=True)
     total_time_last = 0
-    for current_client_count in range(1, number_of_client + 1):
-        result_file_name = f'{test_prefix}_{current_client_count}_epics_results.csv'
-        full_result_path = os.path.join(test_directory, result_file_name)
-        # Setup and subscribe to PVs for the current number of clients
-        for client_idx in range(current_client_count):
-            for pv in pv_list:
-                pv_idx_name = f"{pv}_{client_idx}"
-                out_file_dict[pv_idx_name] = open(os.path.join(test_directory, f"{pv_idx_name}_{current_client_count}_epics.sample"), "w")
-                callback_with_index = partial(monitor_handler, pv_idx_name)
-                epics_pv[pv_idx_name] = PV(pv, callback=callback_with_index)
-    
-        # wait for completion of the single test
-        for i in range(1, run_for_sec + 1):
-            total_time_last = total_time_last +1
-            print(total_time_last, flush=True)
-            time.sleep(interval)
-        #stop all pv and close file
-        test_results = {}
-        with open(full_result_path, 'w', newline='') as file:
-            writer = csv.writer(file)
-            # Writing the header (test names)
-            for client_idx in range(current_client_count):
-                for pv in pv_list:
-                        pv_idx_name = "{}_{}".format(pv, client_idx)
-                        epics_pv[pv_idx_name].clear_callbacks()
-                        out_file_dict[pv_idx_name].close()
-                        csv_file = os.path.join(test_directory, f"{pv}_{client_idx}_{current_client_count}_epics.sample")
+    sample_file = open(os.path.join(test_directory, f'{test_prefix}_{client_total}_{client_idx}_epics.sample'), "w")
+    epics_pv = PV(pv, callback=monitor_handler)
 
-                        #os.remove(csv_file)
-                        test_results[pv_idx_name] = calculate_average_latency(csv_file)
-            writer.writerow(test_results.keys())
-            writer.writerow(test_results.values())
+    print(run_for_sec, flush=True)
+    for i in range(1, run_for_sec + 1):
+        time.sleep(1)
+        print(i, flush=True)
 
+    epics_pv.clear_callbacks()
+    sample_file.close()
 
 def calculate_average_latency(sample_file_path):
     # Read the file into a Pandas DataFrame
@@ -98,6 +72,8 @@ if __name__ == "__main__":
     config = None
     test_directory = 'no-specified-directory'
     test_prefix = 'no-specified-prefix'
+    client_total = 0
+    client_idx = 0
     if len(sys.argv) > 1:
         # sys.argv[1] will be the first parameter, sys.argv[2] the second, and so on.
         for i, param in enumerate(sys.argv[1:], start=1):
@@ -105,9 +81,13 @@ if __name__ == "__main__":
                 test_directory = param
             elif i ==2:
                 test_prefix = param
+            elif i ==3:
+                client_total = param
+            elif i ==4:
+                client_idx = param
     else:
         exit(1)
     with open("config.yaml", "r") as file:
         config = yaml.safe_load(file)
-    test_epix(config, test_directory, test_prefix)
+    test_epix(config, test_directory, test_prefix, client_total, client_idx)
     print("completed")
