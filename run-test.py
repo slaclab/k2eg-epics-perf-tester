@@ -58,8 +58,7 @@ def get_config_value(config, config_key):
 def execute_scripts(all_script, start_test_time, number_of_clients, mode):
     # Execute the tests with increasing number of parallel clients
     for client_total in range(1, number_of_clients + 1):
-        print(f"\nRunning test with {client_total} parallel client(s)")
-
+        print(f"\nRunning test with {client_total} parallel client(s) for {all_script} in mode {mode}")
         # Create a ThreadPoolExecutor with a number of workers equal to client_num
         with concurrent.futures.ThreadPoolExecutor(max_workers=client_total) as executor:
             # Submitting run_test for each script with the current number of clients
@@ -115,19 +114,7 @@ def main():
         "test-epics-pv.py",
         "test-k2eg-pv.py"
     ]
-    # Create a ThreadPoolExecutor with a number of workers equal to client_num
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(all_script)) as executor:
-        # Submitting run_test for each script with the current number of clients
-        futures = [
-            executor.submit(execute_scripts, script, start_test_time, number_of_clients, "paralles") 
-            for script in all_script
-        ]
-
-        # Wait for all the futures to complete
-        for future in concurrent.futures.as_completed(futures):
-            result = future.result()  # Get the result of each future
-            # You can process the result here
-    execute_scripts(all_script, number_of_clients, 'parallels')
+    execute_scripts(all_script, start_test_time, number_of_clients, 'parallels')
     print("\ntest compelted!")
 if __name__ == "__main__":
     main()

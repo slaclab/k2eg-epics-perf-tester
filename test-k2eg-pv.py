@@ -43,7 +43,7 @@ def test_epix(config, test_directory, test_prefix, client_total, client_idx):
     pv = config['pv-to-test']
 
     total_time_last = 0
-    sample_file = open(os.path.join(test_directory, f'{test_prefix}_{client_total}_{client_idx}_epics.sample'), "w")
+    sample_file = open(os.path.join(test_directory, f'{test_prefix}_{client_total}_{client_idx}_k2eg.sample'), "w")
     epics_pv = PV(pv, callback=monitor_handler)
 
     print(run_for_sec, flush=True)
