@@ -27,6 +27,8 @@ def update_progress_bar(bar_length=50):
 
 
 def run_test(script, start_test_time, mode, client_total, client_id):
+    print(f"run_test started for client_id->{client_id}")
+    script_progress_key = f"{client_total}-{client_id}"
     params = [str(start_test_time), str(mode), str(client_total), str(client_id)]
     with subprocess.Popen(["python", script] + params, stdout=subprocess.PIPE, text=True) as proc:
         first_message = True
@@ -35,19 +37,20 @@ def run_test(script, start_test_time, mode, client_total, client_id):
                 value = int(line.strip())
                 with progress_lock:
                     if first_message:
-                        max_steps_dict[script] = value
-                        progress_dict[script] = 0
+                        max_steps_dict[script_progress_key] = value
+                        progress_dict[script_progress_key] = 0
                         first_message = False
                     else:
-                        progress_dict[script] = value
+                        progress_dict[script_progress_key] = value
                 update_progress_bar()
             except ValueError:
                 pass
     with progress_lock:
-        if script in progress_dict:
-            del progress_dict[script]
-        if script in max_steps_dict:
-            del max_steps_dict[script]
+        if script_progress_key in progress_dict:
+            del progress_dict[script_progress_key]
+        if script_progress_key in max_steps_dict:
+            del max_steps_dict[script_progress_key]
+    print(f"run_test completed for client_id->{client_id}")
 
 def get_config_value(config, config_key):
     if config_key not in config:
@@ -56,22 +59,25 @@ def get_config_value(config, config_key):
         return config[config_key]
     
 def execute_scripts(all_script, start_test_time, number_of_clients, mode):
-    # Execute the tests with increasing number of parallel clients
+    # Iterate over the range of client numbers
     for client_total in range(1, number_of_clients + 1):
-        print(f"\nRunning test with {client_total} parallel client(s) for {all_script} in mode {mode}")
-        # Create a ThreadPoolExecutor with a number of workers equal to client_num
-        with concurrent.futures.ThreadPoolExecutor(max_workers=client_total) as executor:
+        print(f"\nRunning tests {all_script} with {client_total} parallel client(s) in mode {mode}")
+        # Create a ThreadPoolExecutor with a number of workers equal to client_total * number of scripts
+        with concurrent.futures.ThreadPoolExecutor(max_workers=client_total * len(all_script)) as executor:
+            # Initialize a list to hold all futures
+            futures = []
+
             # Submitting run_test for each script with the current number of clients
-            futures = [
-                executor.submit(run_test, script, start_test_time, mode, client_total, client_id)
-                for client_id in range(1, client_total + 1)
-                for script in all_script
-            ]
+            for script in all_script:
+                for client_id in range(1, client_total + 1):
+                    future = executor.submit(run_test, script, start_test_time, mode, client_total, client_id)
+                    futures.append(future)
 
             # Wait for all the futures to complete
             for future in concurrent.futures.as_completed(futures):
                 result = future.result()  # Get the result of each future
-            # You can process the result here
+            # Results can be processed here
+        print(f"Compelted test with {client_total} clients")
 
 def main():
     config = None
@@ -92,13 +98,13 @@ def main():
     os.mkdir(start_test_time) 
 
     # Running scripts sequentially
-    print("Execute sequential tests")
-    progress_dict.clear()
-    max_steps_dict.clear()
-    all_script = [
-        "test-epics-pv.py"
-    ]
-    execute_scripts(all_script, start_test_time, number_of_clients, 'sequential')
+    print("Execute tests")
+    # progress_dict.clear()
+    # max_steps_dict.clear()
+    # all_script = [
+    #     "test-epics-pv.py"
+    # ]
+    # execute_scripts(all_script, start_test_time, number_of_clients, 'sequential')
     
     # Clear the progress for the new set of tests
     progress_dict.clear()
@@ -108,13 +114,13 @@ def main():
     ]
     execute_scripts(all_script, start_test_time, number_of_clients, 'sequential')
 
-    progress_dict.clear()
-    max_steps_dict.clear()
-    all_script = [
-        "test-epics-pv.py",
-        "test-k2eg-pv.py"
-    ]
-    execute_scripts(all_script, start_test_time, number_of_clients, 'parallels')
+    # progress_dict.clear()
+    # max_steps_dict.clear()
+    # all_script = [
+    #     "test-epics-pv.py",
+    #     "test-k2eg-pv.py"
+    # ]
+    # execute_scripts(all_script, start_test_time, number_of_clients, 'parallels')
     print("\ntest compelted!")
 if __name__ == "__main__":
     main()

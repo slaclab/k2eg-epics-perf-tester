@@ -10,24 +10,20 @@ import pandas as pd
 
 sample_file = None
 
-def monitor_handler(pvname=None, data=None, timestamp=None, **kwargs):
+
+def monitor_handler(pvname=None, posixseconds=None, nanoseconds=None, **kwargs):
     global sample_file
     current_time_nanoseconds = time.time_ns()
 
-    # Convert the PV timestamp to nanoseconds
-    pv_timestamp_nanoseconds = int(timestamp * 1e9)
+    # The EPICS timestamp is a combination of posixseconds and nanoseconds
+    pv_timestamp_nanoseconds = int(posixseconds * 1e9) + nanoseconds
 
-    # Calculate latency in seconds and nanoseconds
+    # Calculate latency in nanoseconds
     latency_nanoseconds = current_time_nanoseconds - pv_timestamp_nanoseconds
 
-    # Adjust for nanosecond overflow/underflow
-    if latency_nanoseconds < 0:
-        latency_nanoseconds += 1e9
-
-    #print(f"PV:{pvname} latency  nanousec:{latency_nanoseconds}")
+    # Write latency to file
     sample_file.write(str(latency_nanoseconds) + "\n")
     sample_file.flush()
-    
 
 def test_epix(config, test_directory, test_prefix, client_total, client_idx):
     global sample_file
@@ -51,22 +47,8 @@ def test_epix(config, test_directory, test_prefix, client_total, client_idx):
         time.sleep(1)
         print(i, flush=True)
 
-    epics_pv.clear_callbacks()
+    epics_pv.disconnect()
     sample_file.close()
-
-def calculate_average_latency(sample_file_path):
-    # Read the file into a Pandas DataFrame
-    df = pd.read_csv(sample_file_path, header=None, names=['Latency'])
-
-    # Remove the highest and lowest values
-    df_sorted = df['Latency'].sort_values()
-    if len(df_sorted) > 2:
-        df_filtered = df_sorted.iloc[1:-1]
-    else:
-        df_filtered = df_sorted
-
-    # Calculate the average latency
-    return df_filtered.mean()
 
 if __name__ == "__main__":
     config = None
