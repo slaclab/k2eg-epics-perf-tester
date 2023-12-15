@@ -20,7 +20,10 @@ def monitor_handler(pvname=None, posixseconds=None, nanoseconds=None, **kwargs):
 
     # Calculate latency in nanoseconds
     latency_nanoseconds = current_time_nanoseconds - pv_timestamp_nanoseconds
-
+    # Check for negative latency and handle accordingly
+    if latency_nanoseconds < 0:
+        # Optionally, handle negative latency here (e.g., set to 0, discard, etc.)
+        latency_nanoseconds = 0  # Example: Resetting negative latency to 0
     # Write latency to file
     sample_file.write(str(latency_nanoseconds) + "\n")
     sample_file.flush()

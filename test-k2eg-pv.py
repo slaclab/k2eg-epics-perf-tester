@@ -17,22 +17,18 @@ def monitor_handler(pv_name, data):
     timestamp = data['timeStamp']
     seconds_past_epoch = timestamp['secondsPastEpoch']
     nanoseconds = timestamp['nanoseconds']
+    
+    current_time_nanoseconds = time.time_ns()
+    pv_timestamp_nanoseconds = int(seconds_past_epoch * 1e9) + nanoseconds
 
-    # Current time in seconds since epoch and nanoseconds
-    current_time_seconds = int(time.time())
-    current_time_nanoseconds = int(time.time_ns() % (10**9))
-
-    # Calculate latency
-    latency_seconds = current_time_seconds - seconds_past_epoch
-    latency_nanoseconds = current_time_nanoseconds - nanoseconds
+    # Calculate latency in nanoseconds
+    latency_nanoseconds = current_time_nanoseconds - pv_timestamp_nanoseconds
 
     # Adjust for nanosecond overflow/underflow
     if latency_nanoseconds < 0:
-        latency_seconds -= 1
-        latency_nanoseconds += 10**9
+        # Optionally, handle negative latency here (e.g., set to 0, discard, etc.)
+        latency_nanoseconds = 0  # Example: Resetting negative latency to 0
 
-    # Calculate latency
-    latency = current_time_seconds - seconds_past_epoch
     # Write latency to file
     sample_file.write(str(latency_nanoseconds) + "\n")
     sample_file.flush()
@@ -53,16 +49,13 @@ def test_k2eg(k: k2eg, config, test_directory, test_prefix, client_total, client
 
     total_time_last = 0
     sample_file = open(os.path.join(test_directory, f'{test_prefix}_{client_total}_{client_idx}_k2eg.sample'), "w")
-    logging.info(f'Starting monitor for client {client_idx}')
     k.monitor_many([pv], monitor_handler, 5.0)
-    logging.info(f'Started monitor for client {client_idx}')
     print(run_for_sec, flush=True)
     for i in range(1, run_for_sec + 1):
         time.sleep(1)
         print(i, flush=True)
     k.stop_monitor(config['pv-to-test'])
     sample_file.close()
-    logging.info(f'Test comeplted for client {client_idx}')
 
 if __name__ == "__main__":
     k = None

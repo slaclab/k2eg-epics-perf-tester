@@ -27,7 +27,6 @@ def update_progress_bar(bar_length=50):
 
 
 def run_test(script, start_test_time, mode, client_total, client_id):
-    print(f"run_test started for client_id->{client_id}")
     script_progress_key = f"{client_total}-{client_id}"
     params = [str(start_test_time), str(mode), str(client_total), str(client_id)]
     with subprocess.Popen(["python", script] + params, stdout=subprocess.PIPE, text=True) as proc:
@@ -50,7 +49,6 @@ def run_test(script, start_test_time, mode, client_total, client_id):
             del progress_dict[script_progress_key]
         if script_progress_key in max_steps_dict:
             del max_steps_dict[script_progress_key]
-    print(f"run_test completed for client_id->{client_id}")
 
 def get_config_value(config, config_key):
     if config_key not in config:
@@ -99,12 +97,12 @@ def main():
 
     # Running scripts sequentially
     print("Execute tests")
-    # progress_dict.clear()
-    # max_steps_dict.clear()
-    # all_script = [
-    #     "test-epics-pv.py"
-    # ]
-    # execute_scripts(all_script, start_test_time, number_of_clients, 'sequential')
+    progress_dict.clear()
+    max_steps_dict.clear()
+    all_script = [
+        "test-epics-pv.py"
+    ]
+    execute_scripts(all_script, start_test_time, number_of_clients, 'sequential')
     
     # Clear the progress for the new set of tests
     progress_dict.clear()

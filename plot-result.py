@@ -17,9 +17,21 @@ def scan_and_plot(result_directory, regex, plot_name):
             df = pd.read_csv(os.path.join(result_directory, filename), header=None)
             if len(df.columns) == 1:
                 df = df.iloc[:, 0]
+            
+            # Convert nanoseconds to milliseconds
+            df = df / 1_000_000
+
+            # sort the data
+            df_sorted = df.sort_values()
+            if len(df_sorted) > 4:
+                # Exclude the first two (lowest) and last two (highest) measurements
+                df_filtered = df_sorted.iloc[2:-2]
+            else:
+                # If four or fewer measurements, retain the original data
+                df_filtered = df_sorted
             # Assuming latency values are in a column named 'latency'
-            average_latency = df.mean()
-            print(f'Average for total_clients {clients} and instances {match.group(2)} is {average_latency}')
+            average_latency = df_filtered.mean()
+            print(f'For {filename} max:{df_filtered.iloc[-1]} min:{df_filtered.iloc[0]} average:{average_latency}')
             # Store data
             if clients in data:
                 data[clients].append(average_latency)
@@ -31,10 +43,11 @@ def scan_and_plot(result_directory, regex, plot_name):
     averages = {k: sum(v)/len(v) for k, v in data.items()}
 
     # Plotting
+    plt.clf()
     plt.plot(list(averages.keys()), list(averages.values()), marker='o')
     plt.xlabel('Number of Parallel Clients (A)')
     plt.ylabel('Average Latency')
-    plt.title('Latency vs. Number of Parallel Clients')
+    plt.title(f'{plot_name}: Latency vs. Number of Parallel Clients')
     plt.grid(True)
     plt.savefig(os.path.join(result_directory, f'{plot_name}.png'))
 
@@ -44,5 +57,5 @@ if __name__ == "__main__":
     # else:
     #     print("The folder path is needed as parameter")
     #     exit(1)
-    scan_and_plot("test_2023-12-14_20-29-22", r'sequential_(\d+)_(\d+)_epics.sample', "standalone-epics")
-    scan_and_plot("test_2023-12-14_20-29-22", r'sequential_(\d+)_(\d+)_k2eg.sample', "standalone-k2eg")
+    scan_and_plot("test_2023-12-15_01-19-32", r'sequential_(\d+)_(\d+)_epics.sample', "standalone-epics")
+    scan_and_plot("test_2023-12-15_01-19-32", r'sequential_(\d+)_(\d+)_k2eg.sample', "standalone-k2eg")
