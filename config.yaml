@@ -1,4 +1,4 @@
 pv-to-test: VPIO:IN20:111:VRAW
 pv-protocol: ca
-number-of-client: 2
+number-of-client: 5
 test-duration: 20

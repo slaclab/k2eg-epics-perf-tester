@@ -1,8 +1,10 @@
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import pandas as pd
 import os
 import numpy as np
 import re
+from collections import OrderedDict
 
 def scan_and_plot(result_directory, regex, plot_name):
     # Dictionary to store data
@@ -41,6 +43,9 @@ def scan_and_plot(result_directory, regex, plot_name):
 
     # Calculate overall average for each number of clients
     averages = {k: sum(v)/len(v) for k, v in data.items()}
+    # Sorting the dictionary by its keys
+    averages = OrderedDict(sorted(averages.items(), key=lambda item: int(item[0])))
+
 
     # Plotting
     plt.clf()
@@ -49,6 +54,9 @@ def scan_and_plot(result_directory, regex, plot_name):
     plt.ylabel('Average Latency')
     plt.title(f'{plot_name}: Latency vs. Number of Parallel Clients')
     plt.grid(True)
+    # Set x-axis to only use integer values
+    ax = plt.gca()  # Get the current axis
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     plt.savefig(os.path.join(result_directory, f'{plot_name}.png'))
 
 if __name__ == "__main__":
@@ -57,5 +65,5 @@ if __name__ == "__main__":
     # else:
     #     print("The folder path is needed as parameter")
     #     exit(1)
-    scan_and_plot("test_2023-12-15_01-19-32", r'sequential_(\d+)_(\d+)_epics.sample', "standalone-epics")
-    scan_and_plot("test_2023-12-15_01-19-32", r'sequential_(\d+)_(\d+)_k2eg.sample', "standalone-k2eg")
+    scan_and_plot("test_2023-12-15_22-03-51", r'sequential_(\d+)_(\d+)_epics.sample', "standalone-epics")
+    scan_and_plot("test_2023-12-15_22-03-51", r'sequential_(\d+)_(\d+)_k2eg.sample', "standalone-k2eg")
