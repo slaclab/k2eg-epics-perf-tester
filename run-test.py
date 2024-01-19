@@ -143,11 +143,8 @@ def main():
     #create folder with the start test time
     test_instance_count = 0
     start_test_time = 'test_{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-    while os.path.exists(start_test_time):
-        test_instance_count += 1
-        start_test_time = 'test_{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S_{}".format(test_instance_count)))
-        
-    os.mkdir(start_test_time) 
+    if os.path.exists(start_test_time) == False:
+        os.mkdir(start_test_time) 
 
     # Running scripts sequentially
     print("Execute tests")
