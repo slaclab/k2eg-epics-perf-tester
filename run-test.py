@@ -113,6 +113,11 @@ def main():
         print('No config found!')
         exit(1)
     
+    if 'pv-protocol' not in config:
+        print('No protocol specified in config!')
+        exit(1)
+
+    pv_protocol = get_config_value(config, 'pv-protocol')
     number_of_clients = get_config_value(config, 'number-of-client')
     if number_of_clients is None:
         print('No number of client found found!')
@@ -129,6 +134,8 @@ def main():
     all_script = [
         "test-epics-pv.py"
     ]
+    if pv_protocol == 'pva':
+        all_script[0] = "test-epics-pva.py"
     execute_scripts(all_script, start_test_time, number_of_clients, 'sequential')
     
     # Clear the progress for the new set of tests
