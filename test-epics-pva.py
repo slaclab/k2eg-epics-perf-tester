@@ -7,6 +7,7 @@ from functools import partial
 import datetime
 import sys
 import pandas as pd
+import logging
 
 sample_file = None
 
@@ -14,9 +15,9 @@ sample_file = None
 def monitor_handler(pv_data):
     global sample_file
     current_time_nanoseconds = time.time_ns()
-    timestamp = pv_data.timestamp
-    seconds = timestamp.secPastEpoch  # Epoch time in seconds
-    nanoseconds = timestamp.nsec  # Additional nanoseconds
+    timestamp = pv_data['timeStamp']
+    seconds = timestamp['secondsPastEpoch']  # Epoch time in seconds
+    nanoseconds = ['nanoseconds']  # Additional nanoseconds
     # The EPICS timestamp is a combination of posixseconds and nanoseconds
     pv_timestamp_nanoseconds = int(seconds * 1e9) + nanoseconds
 
@@ -47,7 +48,7 @@ def test_epix(config, test_directory, test_prefix, client_total, client_idx):
     total_time_last = 0
     sample_file = open(os.path.join(test_directory, f'{test_prefix}_{client_total}_{client_idx}_epics.sample'), "w")
     # Create a context for the client
-    with Context('pva') as context:
+    with Context('pva', nt=False) as context:
         # Monitor a PV with a callback
         subscription = context.monitor(pv, monitor_handler)
 

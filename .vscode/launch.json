@@ -12,7 +12,8 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "env": {
-                "K2EG_PYTHON_CONFIGURATION_PATH_FOLDER":"${workspaceFolder}/k2eg-configurations"
+                "K2EG_PYTHON_CONFIGURATION_PATH_FOLDER":"${workspaceFolder}/k2eg-configurations",
+                "EPICS_PVA_ADDR_LIST":"192.168.34.1"
             }
         }
     ]
