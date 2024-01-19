@@ -138,7 +138,12 @@ def main():
         exit(1)
 
     #create folder with the start test time
+    test_instance_count = 0
     start_test_time = 'test_{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+    while os.path.exists(start_test_time):
+        test_instance_count += 1
+        start_test_time = 'test_{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S_{}".format(test_instance_count)))
+        
     os.mkdir(start_test_time) 
 
     # Running scripts sequentially
@@ -155,10 +160,11 @@ def main():
     # Clear the progress for the new set of tests
     # progress_dict.clear()
     # max_steps_dict.clear()
-    # all_script = [
-    #     "test-k2eg-pv.py"
-    # ]
+    all_script = [
+        "test-k2eg-pv.py"
+    ]
     execute_scripts(all_script, start_test_time, number_of_clients, 'sequential', index_offset)
+
 
     # progress_dict.clear()
     # max_steps_dict.clear()
