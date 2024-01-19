@@ -85,6 +85,8 @@ def get_config_value(config, config_key):
     
 def execute_scripts(all_script, start_test_time, number_of_clients, mode, client_offset = 0):
     # Iterate over the range of client numbers
+    if client_offset == 0:
+        client_offset = 1
     for client_total in range(1, number_of_clients + 1):
         # Create a ThreadPoolExecutor with a number of workers equal to client_total * number of scripts
         with concurrent.futures.ThreadPoolExecutor(max_workers=client_total * len(all_script)) as executor:
@@ -95,7 +97,7 @@ def execute_scripts(all_script, start_test_time, number_of_clients, mode, client
             max_steps_dict.clear()
             # Submitting run_test for each script with the current number of clients
             for script in all_script:
-                for client_id in range(1, (client_total+client_offset) + 1):
+                for client_id in range(client_offset, (client_total+client_offset)):
                     future = executor.submit(run_test, script, start_test_time, mode, client_total, client_id)
                     futures.append(future)
 
@@ -114,6 +116,7 @@ def clear_screen():
 
 def main():
     config = None
+    index_offset = 0
     logging.basicConfig(filename='test.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     with open("config.yaml", "r") as file:
         config = yaml.safe_load(file)
