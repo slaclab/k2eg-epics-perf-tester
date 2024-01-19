@@ -17,7 +17,7 @@ def monitor_handler(pv_data):
     current_time_nanoseconds = time.time_ns()
     timestamp = pv_data['timeStamp']
     seconds = timestamp['secondsPastEpoch']  # Epoch time in seconds
-    nanoseconds = ['nanoseconds']  # Additional nanoseconds
+    nanoseconds = timestamp['nanoseconds']  # Additional nanoseconds
     # The EPICS timestamp is a combination of posixseconds and nanoseconds
     pv_timestamp_nanoseconds = int(seconds * 1e9) + nanoseconds
 

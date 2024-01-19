@@ -8,7 +8,7 @@ import sys
 import pandas as pd
 import matplotlib.pyplot as plt
 import yaml
-
+import logging
 # Global progress state and lock
 progress_dict = {}  # To track progress of each script
 max_steps_dict = {}  # To track total steps for each script
@@ -106,6 +106,7 @@ def execute_scripts(all_script, start_test_time, number_of_clients, mode):
 
 def main():
     config = None
+    logging.basicConfig(filename='test.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     with open("config.yaml", "r") as file:
         config = yaml.safe_load(file)
 
