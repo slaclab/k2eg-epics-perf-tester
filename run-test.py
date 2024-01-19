@@ -83,7 +83,7 @@ def get_config_value(config, config_key):
     else:
         return config[config_key]
     
-def execute_scripts(all_script, start_test_time, number_of_clients, mode):
+def execute_scripts(all_script, start_test_time, number_of_clients, mode, client_offset = 0):
     # Iterate over the range of client numbers
     for client_total in range(1, number_of_clients + 1):
         # Create a ThreadPoolExecutor with a number of workers equal to client_total * number of scripts
@@ -95,7 +95,7 @@ def execute_scripts(all_script, start_test_time, number_of_clients, mode):
             max_steps_dict.clear()
             # Submitting run_test for each script with the current number of clients
             for script in all_script:
-                for client_id in range(1, client_total + 1):
+                for client_id in range(1, (client_total+client_offset) + 1):
                     future = executor.submit(run_test, script, start_test_time, mode, client_total, client_id)
                     futures.append(future)
 
@@ -126,6 +126,11 @@ def main():
         print('No protocol specified in config!')
         exit(1)
 
+    if len(sys.argv) > 1:
+        for i, param in enumerate(sys.argv[1:], start=1):
+            if i == 1:
+                index_offset = int(param)
+
     pv_protocol = get_config_value(config, 'pv-protocol')
     number_of_clients = get_config_value(config, 'number-of-client')
     if number_of_clients is None:
@@ -145,7 +150,7 @@ def main():
     ]
     if pv_protocol == 'pva':
         all_script[0] = "test-epics-pva.py"
-    execute_scripts(all_script, start_test_time, number_of_clients, 'sequential')
+    execute_scripts(all_script, start_test_time, number_of_clients, 'sequential', index_offset)
     
     # Clear the progress for the new set of tests
     # progress_dict.clear()
@@ -153,7 +158,7 @@ def main():
     # all_script = [
     #     "test-k2eg-pv.py"
     # ]
-    # execute_scripts(all_script, start_test_time, number_of_clients, 'sequential')
+    execute_scripts(all_script, start_test_time, number_of_clients, 'sequential', index_offset)
 
     # progress_dict.clear()
     # max_steps_dict.clear()
