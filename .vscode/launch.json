@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/run-test.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["11"],
+            "args": ["test-output-folder","11"],
             "env": {
                 "K2EG_PYTHON_CONFIGURATION_PATH_FOLDER":"${workspaceFolder}/k2eg-configurations",
                 "EPICS_PVA_ADDR_LIST":"192.168.34.1"

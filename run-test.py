@@ -9,6 +9,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import yaml
 import logging
+from filelock import Timeout, FileLock
+
+lock_file_path = '/tmp/k2eg-test-lock'
+lock = FileLock(lock_file_path, timeout=10)
+
 # Global progress state and lock
 progress_dict = {}  # To track progress of each script
 max_steps_dict = {}  # To track total steps for each script
@@ -117,6 +122,7 @@ def clear_screen():
 def main():
     config = None
     index_offset = 0
+    test_folder_name = None
     logging.basicConfig(filename='test.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     with open("config.yaml", "r") as file:
         config = yaml.safe_load(file)
@@ -131,8 +137,10 @@ def main():
 
     if len(sys.argv) > 1:
         for i, param in enumerate(sys.argv[1:], start=1):
-            if i == 1:
+            if i == 2:
                 index_offset = int(param)
+            elif i == 1:
+                test_folder_name = param
 
     pv_protocol = get_config_value(config, 'pv-protocol')
     number_of_clients = get_config_value(config, 'number-of-client')
@@ -142,9 +150,11 @@ def main():
 
     #create folder with the start test time
     test_instance_count = 0
-    start_test_time = 'test_{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
-    if os.path.exists(start_test_time) == False:
-        os.mkdir(start_test_time) 
+    with lock:
+        if test_folder_name is None:
+            test_folder_name = 'test_{}'.format(datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
+        if os.path.exists(test_folder_name) == False:
+            os.mkdir(test_folder_name) 
 
     # Running scripts sequentially
     print("Execute tests")
@@ -155,7 +165,7 @@ def main():
     ]
     if pv_protocol == 'pva':
         all_script[0] = "test-epics-pva.py"
-    execute_scripts(all_script, start_test_time, number_of_clients, 'sequential', index_offset)
+    execute_scripts(all_script, test_folder_name, number_of_clients, 'sequential', index_offset)
     
     # Clear the progress for the new set of tests
     # progress_dict.clear()
@@ -163,16 +173,8 @@ def main():
     all_script = [
         "test-k2eg-pv.py"
     ]
-    execute_scripts(all_script, start_test_time, number_of_clients, 'sequential', index_offset)
+    execute_scripts(all_script, test_folder_name, number_of_clients, 'sequential', index_offset)
 
-
-    # progress_dict.clear()
-    # max_steps_dict.clear()
-    # all_script = [
-    #     "test-epics-pv.py",
-    #     "test-k2eg-pv.py"
-    # ]
-    # execute_scripts(all_script, start_test_time, number_of_clients, 'parallels')
     clear_screen()
     print("\ntest compelted!")
 if __name__ == "__main__":
