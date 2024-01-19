@@ -5,7 +5,7 @@ import os
 import numpy as np
 import re
 from collections import OrderedDict
-
+import sys
 def scan_and_plot(result_directory, regex, plot_name):
     # Dictionary to store data
     data = {}
@@ -60,10 +60,10 @@ def scan_and_plot(result_directory, regex, plot_name):
     plt.savefig(os.path.join(result_directory, f'{plot_name}.png'))
 
 if __name__ == "__main__":
-    # if len(sys.argv) > 1:
-    #     folder_path = sys.argv[1]
-    # else:
-    #     print("The folder path is needed as parameter")
-    #     exit(1)
-    scan_and_plot("test_2023-12-15_22-03-51", r'sequential_(\d+)_(\d+)_epics.sample', "standalone-epics")
-    scan_and_plot("test_2023-12-15_22-03-51", r'sequential_(\d+)_(\d+)_k2eg.sample', "standalone-k2eg")
+    if len(sys.argv) > 1:
+        folder_path = sys.argv[1]
+    else:
+        print("The folder path is needed as parameter")
+        exit(1)
+    scan_and_plot(folder_path, r'sequential_(\d+)_(\d+)_epics.sample', "standalone-epics")
+    scan_and_plot(folder_path, r'sequential_(\d+)_(\d+)_k2eg.sample', "standalone-k2eg")
