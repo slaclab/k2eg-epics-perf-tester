@@ -104,6 +104,14 @@ def execute_scripts(all_script, start_test_time, number_of_clients, mode):
                 result = future.result()  # Get the result of each future
             # Results can be processed here
 
+def clear_screen():
+    # For Windows
+    if os.name == 'nt':
+        _ = os.system('cls')
+    # For Unix-based systems (Linux, macOS, etc.)
+    else:
+        _ = os.system('clear')
+
 def main():
     config = None
     logging.basicConfig(filename='test.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -154,6 +162,7 @@ def main():
     #     "test-k2eg-pv.py"
     # ]
     # execute_scripts(all_script, start_test_time, number_of_clients, 'parallels')
+    clear_screen()
     print("\ntest compelted!")
 if __name__ == "__main__":
     main()
