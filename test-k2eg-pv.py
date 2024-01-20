@@ -33,7 +33,7 @@ def monitor_handler(pv_name, data):
     sample_file.write(str(latency_nanoseconds) + "\n")
     sample_file.flush()
 
-def test_k2eg(k: k2eg, config, test_directory, test_prefix, client_total, client_idx):
+def test_k2eg(k: k2eg, config, test_directory, test_prefix, client_total, client_idx, test_name):
     global sample_file
     interval = 1   # Update interval in seconds
     number_of_client = 1
@@ -48,7 +48,7 @@ def test_k2eg(k: k2eg, config, test_directory, test_prefix, client_total, client
     pv = config['pv-protocol']+'://'+config['pv-to-test']
 
     total_time_last = 0
-    sample_file = open(os.path.join(test_directory, f'{test_prefix}_{client_total}_{client_idx}_k2eg.sample'), "w")
+    sample_file = open(os.path.join(test_directory, f'{test_prefix}_{test_name}_{client_total}_{client_idx}_k2eg.sample'), "w")
     k.monitor_many([pv], monitor_handler, 5.0)
     print(run_for_sec, flush=True)
     for i in range(1, run_for_sec + 1):
@@ -75,6 +75,8 @@ if __name__ == "__main__":
                 client_total = param
             elif i ==4:
                 client_idx = param
+            elif i ==5:
+                test_name = param
     else:
         exit(1)
     with open("config.yaml", "r") as file:
@@ -87,7 +89,7 @@ if __name__ == "__main__":
         )
         app_name = f'app-test-{client_idx}'
         k = k2eg.dml('lcls', app_name)
-        test_k2eg(k, config, test_directory, test_prefix, client_total, client_idx)
+        test_k2eg(k, config, test_directory, test_prefix, client_total, client_idx, test_name)
     except k2eg.OperationError as e:
         logging.error(f"Remote error: {e.error} with message: {e.args[0]}")
     except k2eg.OperationTimeout:

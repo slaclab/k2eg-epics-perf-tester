@@ -5,16 +5,40 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run test",
-            "type": "python",
+            "name": "Run test one",
+            "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/run-test.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": ["test-output-folder","11"],
+            "args": ["test-output-folder","one"],
             "env": {
                 "K2EG_PYTHON_CONFIGURATION_PATH_FOLDER":"${workspaceFolder}/k2eg-configurations",
-                "EPICS_PVA_ADDR_LIST":"192.168.34.1"
+                "EPICS_PVA_ADDR_LIST":"172.27.3.255 172.27.131.255 172.27.43.255 172.21.40.63 134.79.151.36 192.168.34.1 172.24.8.204:15076"
+            }
+        },{
+            "name": "Run test two",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/run-test.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": ["test-output-folder","two"],
+            "env": {
+                "K2EG_PYTHON_CONFIGURATION_PATH_FOLDER":"${workspaceFolder}/k2eg-configurations",
+                "EPICS_PVA_ADDR_LIST":"172.27.3.255 172.27.131.255 172.27.43.255 172.21.40.63 134.79.151.36 192.168.34.1 172.24.8.204:15076"
+            }
+        },{
+            "name": "Plot",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/plot-result.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": ["test-output-folder"],
+            "env": {
+                "K2EG_PYTHON_CONFIGURATION_PATH_FOLDER":"${workspaceFolder}/k2eg-configurations",
+                "EPICS_PVA_ADDR_LIST":"172.27.3.255 172.27.131.255 172.27.43.255 172.21.40.63 134.79.151.36 192.168.34.1 172.24.8.204:15076"
             }
         }
     ]

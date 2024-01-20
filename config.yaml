@@ -1,4 +1,4 @@
 pv-to-test: K2EG:TEST:TEMPERATURE
 pv-protocol: pva
-number-of-client: 10
+number-of-client: 2
 test-duration: 20

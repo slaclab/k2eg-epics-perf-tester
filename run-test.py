@@ -55,9 +55,9 @@ def update_progress_bar(bar_length=50, max_lines=10):
         sys.stdout.flush()
 
 
-def run_test(script, start_test_time, mode, client_total, client_id):
+def run_test(script, start_test_time, mode, client_total, client_id, test_name):
     script_progress_key = f"{script}-{client_total}-{client_id}"
-    params = [str(start_test_time), str(mode), str(client_total), str(client_id)]
+    params = [str(start_test_time), str(mode), str(client_total), str(client_id), str(test_name)]
     with progress_lock:
         # Initialize or reset the progress data at the start of the test
         max_steps_dict[script_progress_key] = 1  # Set to a default non-zero value
@@ -88,10 +88,8 @@ def get_config_value(config, config_key):
     else:
         return config[config_key]
     
-def execute_scripts(all_script, start_test_time, number_of_clients, mode, client_offset = 0):
+def execute_scripts(all_script, start_test_time, number_of_clients, mode, test_name):
     # Iterate over the range of client numbers
-    if client_offset == 0:
-        client_offset = 1
     for client_total in range(1, number_of_clients + 1):
         # Create a ThreadPoolExecutor with a number of workers equal to client_total * number of scripts
         with concurrent.futures.ThreadPoolExecutor(max_workers=client_total * len(all_script)) as executor:
@@ -102,8 +100,8 @@ def execute_scripts(all_script, start_test_time, number_of_clients, mode, client
             max_steps_dict.clear()
             # Submitting run_test for each script with the current number of clients
             for script in all_script:
-                for client_id in range(client_offset, (client_total+client_offset)):
-                    future = executor.submit(run_test, script, start_test_time, mode, client_total, client_id)
+                for client_id in range(1, client_total+1):
+                    future = executor.submit(run_test, script, start_test_time, mode, client_total, client_id, test_name)
                     futures.append(future)
 
             # Wait for all the futures to complete
@@ -121,7 +119,7 @@ def clear_screen():
 
 def main():
     config = None
-    index_offset = 0
+    test_name = "test"
     test_folder_name = None
     logging.basicConfig(filename='test.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     with open("config.yaml", "r") as file:
@@ -138,7 +136,7 @@ def main():
     if len(sys.argv) > 1:
         for i, param in enumerate(sys.argv[1:], start=1):
             if i == 2:
-                index_offset = int(param)
+                test_name = param
             elif i == 1:
                 test_folder_name = param
 
@@ -165,7 +163,7 @@ def main():
     ]
     if pv_protocol == 'pva':
         all_script[0] = "test-epics-pva.py"
-    execute_scripts(all_script, test_folder_name, number_of_clients, 'sequential', index_offset)
+    execute_scripts(all_script, test_folder_name, number_of_clients, 'sequential', test_name)
     
     # Clear the progress for the new set of tests
     # progress_dict.clear()
@@ -173,7 +171,7 @@ def main():
     all_script = [
         "test-k2eg-pv.py"
     ]
-    execute_scripts(all_script, test_folder_name, number_of_clients, 'sequential', index_offset)
+    execute_scripts(all_script, test_folder_name, number_of_clients, 'sequential', test_name)
 
     clear_screen()
     print("\ntest compelted!")

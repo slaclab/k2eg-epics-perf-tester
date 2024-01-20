@@ -31,7 +31,7 @@ def monitor_handler(pv_data):
     sample_file.write(str(latency_nanoseconds) + "\n")
     sample_file.flush()
 
-def test_epix(config, test_directory, test_prefix, client_total, client_idx):
+def test_epix(config, test_directory, test_prefix, client_total, client_idx, test_name):
     global sample_file
     interval = 1   # Update interval in seconds
     number_of_client = 1
@@ -46,7 +46,7 @@ def test_epix(config, test_directory, test_prefix, client_total, client_idx):
     pv = config['pv-to-test']
 
     total_time_last = 0
-    sample_file = open(os.path.join(test_directory, f'{test_prefix}_{client_total}_{client_idx}_epics.sample'), "w")
+    sample_file = open(os.path.join(test_directory, f'{test_prefix}_{test_name}_{client_total}_{client_idx}_epics.sample'), "w")
     # Create a context for the client
     with Context('pva', nt=False) as context:
         # Monitor a PV with a callback
@@ -77,9 +77,11 @@ if __name__ == "__main__":
                 client_total = param
             elif i ==4:
                 client_idx = param
+            elif i ==5:
+                test_name = param
     else:
         exit(1)
     with open("config.yaml", "r") as file:
         config = yaml.safe_load(file)
-    test_epix(config, test_directory, test_prefix, client_total, client_idx)
+    test_epix(config, test_directory, test_prefix, client_total, client_idx, test_name)
     print("completed")
