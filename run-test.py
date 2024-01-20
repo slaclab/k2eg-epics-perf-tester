@@ -121,6 +121,7 @@ def main():
     config = None
     test_name = "test"
     test_folder_name = None
+    app_idx_offset = 0
     logging.basicConfig(filename='test.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     with open("config.yaml", "r") as file:
         config = yaml.safe_load(file)
