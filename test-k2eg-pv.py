@@ -77,6 +77,8 @@ if __name__ == "__main__":
                 client_idx = param
             elif i ==5:
                 test_name = param
+            elif i ==6:
+                app_idx_offset = param
     else:
         exit(1)
     with open("config.yaml", "r") as file:
@@ -87,7 +89,7 @@ if __name__ == "__main__":
             format="[%(levelname)-8s] %(message)s",
             level=logging.INFO,
         )
-        app_name = f'app-test-{client_idx}'
+        app_name = f'app-test-{int(app_idx_offset)+int(client_idx)}'
         k = k2eg.dml('lcls', app_name)
         test_k2eg(k, config, test_directory, test_prefix, client_total, client_idx, test_name)
     except k2eg.OperationError as e:
