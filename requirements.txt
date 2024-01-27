@@ -1,0 +1,8 @@
+pyepics
+k2eg
+pandas
+matplotlib
+p4p
+pyyaml
+filelock
+PyArrow

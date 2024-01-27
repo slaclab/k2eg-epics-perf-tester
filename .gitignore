@@ -2,3 +2,4 @@
 *.txt
 test_*
 test.log
+!requirements.txt
