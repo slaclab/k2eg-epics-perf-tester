@@ -9,29 +9,60 @@ import sys
 import pandas as pd
 import k2eg
 import logging
+
 sample_file = None
+total_bytes_received = 0
+start_time_nanoseconds = time.time_ns()
+bandwidth_bytes_per_second = 0
 
+def monitor_handler(pv_name, pv_data):
+    global sample_file, total_bytes_received, start_time_nanoseconds, bandwidth_bytes_per_second
 
-def monitor_handler(pv_name, data):
-    # Extract the timestamp data
-    timestamp = data['timeStamp']
-    seconds_past_epoch = timestamp['secondsPastEpoch']
-    nanoseconds = timestamp['nanoseconds']
-    
     current_time_nanoseconds = time.time_ns()
-    pv_timestamp_nanoseconds = int(seconds_past_epoch * 1e9) + nanoseconds
+    timestamp = pv_data['timeStamp']
+    seconds, nanoseconds = timestamp['secondsPastEpoch'], timestamp['nanoseconds']
+    pv_timestamp_nanoseconds = int(seconds * 1e9) + nanoseconds
 
-    # Calculate latency in nanoseconds
-    latency_nanoseconds = current_time_nanoseconds - pv_timestamp_nanoseconds
+    latency_nanoseconds = max(current_time_nanoseconds - pv_timestamp_nanoseconds, 0)
+    value_size_bytes = calculate_data_size(pv_data['value'])
+    total_bytes_received += value_size_bytes
 
-    # Adjust for nanosecond overflow/underflow
-    if latency_nanoseconds < 0:
-        # Optionally, handle negative latency here (e.g., set to 0, discard, etc.)
-        latency_nanoseconds = 0  # Example: Resetting negative latency to 0
+    elapsed_time_seconds = (current_time_nanoseconds - start_time_nanoseconds) / 1e9
 
-    # Write latency to file
-    sample_file.write(str(latency_nanoseconds) + "\n")
+    # Check if one second has elapsed since the last reset or if elapsed time is very small
+    if elapsed_time_seconds >= 1:
+        # Reset start time and total bytes received for the new one-second interval
+        start_time_nanoseconds = current_time_nanoseconds
+        bandwidth_bytes_per_second = total_bytes_received
+        total_bytes_received = 0
+
+    # Write latency and bandwidth to file
+    sample_file.write(f"{latency_nanoseconds},{bandwidth_bytes_per_second}\n")
     sample_file.flush()
+    
+def calculate_data_size(value):
+    if isinstance(value, (int, float)):
+        # Basic numeric types (int, float)
+        return sys.getsizeof(value)
+    elif isinstance(value, str):
+        # String type
+        return len(value)  # Number of characters in the string
+    elif isinstance(value, (list, tuple)):
+        # List or tuple (e.g., array of values)
+        return sum(calculate_data_size(item) for item in value)
+    elif isinstance(value, dict):
+        # Dictionary type (e.g., structured data)
+        size = sum(sys.getsizeof(key) + calculate_data_size(val) for key, val in value.items())
+        return size + sys.getsizeof(value)
+    elif isinstance(value, bytes):
+        # Byte array
+        return len(value)
+    elif value is None:
+        # NoneType
+        return 0
+    else:
+        # Fallback for other types
+        return sys.getsizeof(value)
 
 def test_k2eg(k: k2eg, config, test_directory, test_prefix, client_total, client_idx, test_name):
     global sample_file
