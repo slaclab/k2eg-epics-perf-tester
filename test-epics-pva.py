@@ -1,4 +1,7 @@
+from ctypes import Array
 import os
+import numpy as np
+import p4p
 import yaml
 from p4p.client.thread import Context
 import time
@@ -30,6 +33,7 @@ def monitor_handler(pv_data):
     # Check if one second has elapsed since the last reset or if elapsed time is very small
     if elapsed_time_seconds >= 1:
         # Reset start time and total bytes received for the new one-second interval
+        logging.info(f"Latency: {latency_nanoseconds}, Bandwidth: {bandwidth_bytes_per_second}")
         start_time_nanoseconds = current_time_nanoseconds
         bandwidth_bytes_per_second = total_bytes_received
         total_bytes_received = 0
@@ -38,10 +42,26 @@ def monitor_handler(pv_data):
     sample_file.write(f"{latency_nanoseconds},{bandwidth_bytes_per_second}\n")
     sample_file.flush()
 
+def calculate_structure_size(structure):
+    """Recursively calculate the size of a structured p4p.wrapper.value."""
+    total_size = sys.getsizeof(structure)
+    if hasattr(structure, 'items'):
+        for field_name, field_value in structure.items():
+            total_size += sys.getsizeof(field_name) + calculate_data_size(field_value)
+    return total_size
+
 def calculate_data_size(value):
-    if isinstance(value, (int, float)):
+    t = type(value)
+    if isinstance(value, p4p.wrapper.Value):
+        id = value.getID()
+        if id=="structure":
+            return calculate_structure_size(value)
+        return calculate_structure_size(value)
+    elif isinstance(value, (int, float)):
         # Basic numeric types (int, float)
         return sys.getsizeof(value)
+    elif isinstance(value, np.ndarray):
+        return value.nbytes
     elif isinstance(value, str):
         # String type
         return len(value)  # Number of characters in the string
@@ -114,5 +134,11 @@ if __name__ == "__main__":
         exit(1)
     with open("config.yaml", "r") as file:
         config = yaml.safe_load(file)
+    logging.basicConfig(
+        filename=f'epics-{client_total}-{client_idx}.log',
+        format="[%(levelname)-8s] %(message)s",
+        level=logging.INFO,
+        filemode='w'
+    )
     test_epix(config, test_directory, test_prefix, client_total, client_idx, test_name)
     print("completed")

@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import yaml
 from epics import PV
 import time
@@ -32,6 +33,7 @@ def monitor_handler(pv_name, pv_data):
     # Check if one second has elapsed since the last reset or if elapsed time is very small
     if elapsed_time_seconds >= 1:
         # Reset start time and total bytes received for the new one-second interval
+        logging.info(f"Latency: {latency_nanoseconds}, Bandwidth: {bandwidth_bytes_per_second}")
         start_time_nanoseconds = current_time_nanoseconds
         bandwidth_bytes_per_second = total_bytes_received
         total_bytes_received = 0
@@ -41,6 +43,7 @@ def monitor_handler(pv_name, pv_data):
     sample_file.flush()
     
 def calculate_data_size(value):
+    t = type(value)
     if isinstance(value, (int, float)):
         # Basic numeric types (int, float)
         return sys.getsizeof(value)
@@ -117,8 +120,10 @@ if __name__ == "__main__":
         
     try:
         logging.basicConfig(
+            filename=f'k2eg-{client_total}-{client_idx}.log',
             format="[%(levelname)-8s] %(message)s",
             level=logging.INFO,
+            filemode='w'
         )
         app_name = f'app-test-{int(app_idx_offset)+int(client_idx)}'
         k = k2eg.dml('lcls', app_name)
